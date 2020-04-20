@@ -66,28 +66,145 @@ One note before you delve into your tasks: for each endpoint you are expected to
 8. Create a POST endpoint to get questions to play the quiz. This endpoint should take category and previous question parameters and return a random questions within the given category, if provided, and that is not one of the previous questions. 
 9. Create error handlers for all expected errors including 400, 404, 422 and 500. 
 
-REVIEW_COMMENT
-```
-This README is missing documentation of your endpoints. Below is an example for your endpoint to get all categories. Please use it as a reference for creating your documentation and resubmit your code. 
+## Documentation
 
-Endpoints
-GET '/categories'
-GET ...
-POST ...
-DELETE ...
-
-GET '/categories'
+`GET /categories`
 - Fetches a dictionary of categories in which the keys are the ids and the value is the corresponding string of the category
 - Request Arguments: None
 - Returns: An object with a single key, categories, that contains a object of id: category_string key:value pairs. 
-{'1' : "Science",
+
+Response:
+```
+{
+'1' : "Science",
 '2' : "Art",
 '3' : "Geography",
 '4' : "History",
 '5' : "Entertainment",
-'6' : "Sports"}
-
+'6' : "Sports"
+}
 ```
+
+`GET /questions`
+- Fetches a dictionary of categories in which the keys are the ids and the value is the corresponding string of the category
+- Request Arguments: 
+  - page: type int
+
+- Returns: an object with the "questions" key being a list of Question objects.
+
+Response:
+```
+{
+  "success": True,
+  "status": 200,
+  "total_questions": <Integer>,
+  "questions": <Array [<Question>]>,
+  "current_category": None,
+  "categories": <Array [<String>]>
+}
+```
+
+`GET /categories/<category_id>/questions`
+- Fetches questions with category id: `category_id`
+- Request Args: None
+- Returns an array of questions from a `category_id`
+
+
+Response:
+```
+{
+  "success": True,
+  "category_id": <Integer>,
+  "total_questions": <Integer>,
+  "questions": <Array [<Question>]>
+}
+```
+
+`DELETE /questions/<question_id>`
+- Deletes a question with `question_id`
+- Request Args: None
+
+Response:
+```
+{ 
+  success: True,
+  status_code: 200
+}
+```
+
+
+`POST /questions`
+- Creates a new question
+- Request Args: 
+  - question: <String>
+  - answer: <String>
+  - category: <String>
+  - difficulty: <Integer>
+
+Response:
+```
+{ 
+  success: True,
+  status_code: 200
+}
+```
+
+`POST /questions`
+- Search within the questions resource
+- Request args:
+  - search: <String>
+- Returns an array of questions matching search term
+
+Response: 
+```
+{
+  "success": True,
+  "status_code": 200,
+  "total_questions": <Integer>,
+  "questions": <Array[<Question>]>
+}
+```
+
+
+
+`POST /play`
+- Picks a random question from a category of questions whilst only providing new questions that are not provided within previous_questions
+- Request Args: 
+  - quiz_category: <Object>
+    - id: <Integer>
+  - previous_questions: <Array[<Integer>]
+
+
+Response:
+```
+{
+  success: True,
+  question: <NextQuestion>
+}
+```
+
+example request:
+```
+curl -X POST http://localhost:5000/play \ 
+  { quiz_category: { id: 6 }, previous_questions: [20] }
+```
+
+example response:
+```
+{
+  success: true,
+  question: {
+    answer: "Brazil",
+    category: 6,
+    difficulty: 3,
+    id: 10,
+    question: "Which is the only team to play in every World Cup tournament?"
+  }
+}
+```
+
+
+
 
 
 ## Testing
