@@ -29,16 +29,33 @@ class TriviaTestCase(unittest.TestCase):
         self.new_question = {
             "question": "What is the animal for House HufflePuff",
             "answer": "Badger",
-            "category": "Harry Potter",
+            "category": 7,
             "difficulty": 5
         }
 
         self.start_quiz = {
             "quiz_category": {
-                "id": 1,
-                "type": "Science"
+                "id": 1
             },
             "previous_questions": []
+        }
+
+        self.start_quiz_error = {
+            "quiz_category": {
+                "id": 9999
+            },
+            "previous_questions": []
+        }
+        self.start_quiz_no_category = {
+            "quiz_category": {},
+            "previous_questions": []
+        }
+
+        self.start_quiz_category_with_previous_questions = {
+            "quiz_category": {
+                "id": 1
+            },
+            "previous_questions": [20]
         }
 
     def tearDown(self):
@@ -110,42 +127,70 @@ class TriviaTestCase(unittest.TestCase):
     def test_delete_question(self):
         # find harry potter test question
 
-        question_id = Question.query.filter_by(
-            answer="badger").first().get("id")
+        question = Question.query.filter_by(
+            answer="Badger").first()
 
-        response = self.client().delete(f"/questions/{id}")
+        response = self.client().delete(f"/questions/{question.id}")
         data = json.loads(response.data)
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(data["success"], True)
-        self.assertEqual(data["deleted"], 1)
-        self.assertTrue(data["total_questions"])
 
-    # def test_404_if_questions_does_not_exist(self):
-    #     response = self.client().delete("/questions/1000")
-    #     data = json.loads(response.data)
+    def test_404_if_questions_does_not_exist(self):
+        response = self.client().delete("/questions/1000")
+        data = json.loads(response.data)
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(data["success"], False)
 
-    #     self.assertEqual(response.status_code, 404)
-    #     self.assertEqual(data["success"], False)
+    def test_categories_with_questions(self):
+        response = self.client().get("/categories/1/questions")
+        data = json.loads(response.data)
 
-    # def test_categories_with_questions(self):
-    #     response = self.client().get("/categories/1/questions")
-    #     data = json.loads(response.data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data["success"], True)
+        self.assertTrue(data["questions"])
 
-    #     self.assertTrue(response.data)
-    #     self.assertEqual(response.status_code, 200)
-    #     self.assertEqual(data["success"], True)
+    def test_404_categories_with_questions(self):
+        response = self.client().get("/categories/1000/questions")
+        data = json.loads(response.data)
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(data["success"], False)
 
-    #     self.assertEqual(len(data["questions"]), 10)
+    def test_play(self):
+        response = self.client().post("/play", json=self.start_quiz)
+        data = json.loads(response.data)
 
-    # def test_categories_with_questions(self):
-    #     response = self.client().post("/play", json=self.start_quiz)
-    #     data = json.loads(response.data)
+        self.assertTrue(response.data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data["success"], True)
+        self.assertTrue(data["question"])
 
-    #     self.assertTrue(response.data)
-    #     self.assertEqual(response.status_code, 200)
-    #     self.assertEqual(data["success"], True)
-    #     self.assertTrue(data["question"])
+    def test_play_error(self):
+        response = self.client().post("/play", json=self.start_quiz_error)
+        data = json.loads(response.data)
+
+        self.assertTrue(response.data)
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(data["success"], False)
+
+    def test_play_no_category(self):
+        response = self.client().post("/play", json=self.start_quiz_no_category)
+        data = json.loads(response.data)
+
+        self.assertTrue(response.data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data["success"], True)
+        self.assertTrue(data["question"])
+
+    def test_play_category_with_previous_questions(self):
+        response = self.client().post(
+            "/play", json=self.start_quiz_category_with_previous_questions)
+        data = json.loads(response.data)
+
+        self.assertTrue(response.data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data["success"], True)
+        self.assertTrue(data["question"])
 
 
 if __name__ == "__main__":

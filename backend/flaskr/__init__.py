@@ -99,12 +99,22 @@ def create_app(test_config=None):
     @app.route("/questions/<int:question_id>", methods=["DELETE"])
     @cross_origin()
     def delete_question(question_id):
-        # TODO:
-        # delete question
         try:
             if request.method != "DELETE":
                 abort(405)
-            return
+
+            # delete_question = Question.query.delete()
+            question = Question.query.get(question_id)
+            if (question is None):
+                abort(422)
+
+            question.delete()
+
+            return jsonify({
+                "success": True,
+                "message": f"Question was deleted: {question_id}"
+            })
+
         except:
             abort(422)
 
@@ -150,8 +160,8 @@ def create_app(test_config=None):
                     Question.question.ilike("%{}%".format(search))).all()
 
                 return jsonify({
-                    "status_code": 200,
                     "success": True,
+                    "status_code": 200,
                     "total_questions": len(search_questions),
                     "questions": [q.format() for q in search_questions]
                 })
@@ -174,7 +184,7 @@ def create_app(test_config=None):
 
                 return jsonify({
                     "success": True,
-                    "status_code": 200,
+                    "status_code": 200
                 })
         except:
             abort(422)
@@ -190,14 +200,19 @@ def create_app(test_config=None):
     @app.route("/categories/<int:category_id>/questions", methods=["GET"])
     @cross_origin()
     def get_categories_questions(category_id):
-        # TODO:
-        # list questions
-        try:
-            if request.method != "GET":
-                abort(405)
-            return
-        except:
-            abort(422)
+        questions = Question.query.filter_by(
+            category=str(category_id)).all()
+
+        if (not questions or len(questions) == 0):
+            abort(404)
+
+        return jsonify({
+            "success": True,
+            "category_id": category_id,
+            "total_questions": len(questions),
+            "questions": [q.format() for q in questions]
+        })
+
     '''
     @TODO: 
     Create a POST endpoint to get questions to play the quiz. 
@@ -212,16 +227,59 @@ def create_app(test_config=None):
     @app.route("/play", methods=["POST"])
     @cross_origin()
     def play():
-        # TODO:
-        # return random choice of questions based on category_id
         try:
-            if request.method != "POST":
-                abort(405)
-            return
-        except:
-            abort(422)
-        return
+            body = request.get_json()
+            category = body.get("quiz_category")
+            previous_questions = body.get("previous_questions")
 
+            category_id = category.get("id", None)
+
+            if (category_id):
+
+                has_category = Category.query.filter_by(
+                    id=str(category_id)).first()
+
+                if (has_category is None):
+                    abort(422)
+
+                if (previous_questions):
+                    filtered_questions = [q.format()
+                                          for q in Question.query.filter(
+                        Question.id.notin_(previous_questions),
+                        Question.category == str(category_id)).all()
+                    ]
+
+                    next_question = random.choice(filtered_questions)
+
+                    return jsonify({
+                        "success": True,
+                        "question": next_question
+                    })
+
+                else:
+                    questions = [question.format()
+                                 for question in Question.query.all()]
+
+                    next_question = random.choice(questions)
+                    return jsonify({
+                        "success": True,
+                        "question": next_question
+                    })
+
+            else:
+                questions = [question.format()
+                             for question in Question.query.all()]
+
+                next_question = random.choice(questions)
+                return jsonify({
+                    "success": True,
+                    "question": next_question
+                }), 200
+
+        except Exception as error:
+            raise error
+        finally:
+            pass
     '''
     @TODO: 
     Create error handlers for all expected errors 
