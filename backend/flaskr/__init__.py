@@ -42,7 +42,7 @@ def create_app(test_config=None):
                 categories[id] = category.type
 
             return jsonify({
-                "status": True,
+                "success": True,
                 "status_code": 200,
                 "categories": categories
             })
@@ -59,7 +59,7 @@ def create_app(test_config=None):
             page = request.args.get("page", 1, type=int)
             offset = (page - 1) * 10
             total_questions = Question.query.count()
-            questions = Question.query.offset(offset).all()
+            questions = Question.query.offset(offset).limit(10).all()
 
             if (len(questions) == 0):
                 abort(404)
@@ -177,7 +177,7 @@ def create_app(test_config=None):
                 has_category = Category.query.filter_by(
                     id=str(category_id)).first()
 
-                if (has_category is None):
+                if (has_category == None):
                     abort(422)
 
                 if (previous_questions):
@@ -199,7 +199,7 @@ def create_app(test_config=None):
 
                 else:
                     questions = [question.format()
-                                 for question in Question.query.filter_by(category=category_id).all()]
+                                 for question in Question.query.filter_by(category=str(category_id)).all()]
 
                     next_question = random.choice(questions)
                     return jsonify({

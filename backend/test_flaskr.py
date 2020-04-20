@@ -73,7 +73,7 @@ class TriviaTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(data["success"], True)
-        self.assertEqual(data["categories"][0], "Science")
+        self.assertTrue(data["categories"])
 
     def test_get_questions(self):
         response = self.client().get("/questions")
@@ -92,6 +92,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data["success"], True)
 
         self.assertEqual(len(data["questions"]), 10)
+        self.assertEqual(data["total_questions"], 19)
 
     def test_error_get_questions_with_page(self):
         response = self.client().get('/questions?page=1000')
