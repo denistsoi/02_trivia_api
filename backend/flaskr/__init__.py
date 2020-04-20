@@ -59,7 +59,7 @@ def create_app(test_config=None):
             page = request.args.get("page", default=1, type=int)
             total_questions = Question.query.count()
 
-            questions = Question.query.paginate(page, 10).items
+            questions = Question.query.paginate(page=page, per_page=10).items
 
             if (len(questions) == 0):
                 abort(404)
