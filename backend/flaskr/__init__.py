@@ -243,4 +243,11 @@ def create_app(test_config=None):
             "message": "Not processable"
         }), 422
 
+    @app.errorhandler(500)
+    def not_processable(e):
+        return jsonify({
+            "success": False,
+            "message": "There was a server error"
+        }), 500
+
     return app
