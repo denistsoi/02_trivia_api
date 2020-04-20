@@ -41,12 +41,16 @@ def create_app(test_config=None):
             if request.method != "GET":
                 abort(405)
 
-            categories = Category.query.all()
+            categories = {}
+
+            for category in Category.query.all():
+                id = category.id
+                categories[id] = category.type
 
             return jsonify({
                 "status": True,
                 "status_code": 200,
-                "categories": [cat.type for cat in categories]
+                "categories": categories
             })
         except:
             abort(422)
@@ -250,6 +254,9 @@ def create_app(test_config=None):
                         Question.category == str(category_id)).all()
                     ]
 
+                    if (not filtered_questions):
+                        abort(404)
+
                     next_question = random.choice(filtered_questions)
 
                     return jsonify({
@@ -259,7 +266,7 @@ def create_app(test_config=None):
 
                 else:
                     questions = [question.format()
-                                 for question in Question.query.all()]
+                                 for question in Question.query.filter_by(category=category_id).all()]
 
                     next_question = random.choice(questions)
                     return jsonify({
