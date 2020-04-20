@@ -46,7 +46,7 @@ def create_app(test_config=None):
                 "status_code": 200,
                 "categories": categories
             })
-        except:
+        except Exception as error:
             abort(422)
 
     @app.route("/questions", methods=["GET"])
@@ -56,10 +56,10 @@ def create_app(test_config=None):
             abort(405)
 
         try:
-            page = request.args.get("page", 1, type=int)
-            offset = (page - 1) * 10
+            page = request.args.get("page", default=1, type=int)
             total_questions = Question.query.count()
-            questions = Question.query.offset(offset).limit(10).all()
+
+            questions = Question.query.paginate(page, 10).items
 
             if (len(questions) == 0):
                 abort(404)
@@ -72,7 +72,7 @@ def create_app(test_config=None):
                 "current_category": None,
                 "categories": [c.type for c in Category.query.all()]
             })
-        except:
+        except Exception as error:
             abort(422)
 
     @app.route("/questions/<int:question_id>", methods=["DELETE"])
@@ -94,7 +94,7 @@ def create_app(test_config=None):
                 "message": f"Question was deleted: {question_id}"
             })
 
-        except:
+        except Exception as error:
             abort(422)
 
     @app.route("/questions", methods=["POST"])
@@ -132,7 +132,7 @@ def create_app(test_config=None):
                         difficulty=difficulty
                     )
                     new_question.insert()
-                except:
+                except Exception as error:
                     db.session.rollback()
                     abort(422)
 
@@ -143,7 +143,7 @@ def create_app(test_config=None):
                     "success": True,
                     "status_code": 200
                 })
-        except:
+        except Exception as error:
             abort(422)
 
     @app.route("/categories/<int:category_id>/questions", methods=["GET"])
@@ -177,7 +177,7 @@ def create_app(test_config=None):
                 has_category = Category.query.filter_by(
                     id=str(category_id)).first()
 
-                if (has_category == None):
+                if (has_category is None):
                     abort(422)
 
                 if (previous_questions):
@@ -198,8 +198,10 @@ def create_app(test_config=None):
                     })
 
                 else:
+                    questions_query = Question.query.filter_by(
+                        category=str(category_id)).all()
                     questions = [question.format()
-                                 for question in Question.query.filter_by(category=str(category_id)).all()]
+                                 for question in questions_query]
 
                     next_question = random.choice(questions)
                     return jsonify({
