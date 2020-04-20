@@ -13,6 +13,7 @@ def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__)
     setup_db(app)
+    db = SQLAlchemy()
 
     CORS(app, resources={r"*": {"origins": "*"}})
 
@@ -27,49 +28,72 @@ def create_app(test_config=None):
                              "GET, POST, PATCH, DELETE, OPTIONS")
         return response
 
-    @app.route("/")
-    def hello():
-        return "hello"
-
     '''
-    @TODO: 
-    Create an endpoint to handle GET requests 
+    @TODO:
+    Create an endpoint to handle GET requests
     for all available categories.
     '''
 
     @app.route("/categories")
     @cross_origin()
     def get_categories():
-        categories = Category.query.all().get_or_404()
+        try:
+            if request.method != "GET":
+                abort(405)
 
-        return jsonify(
-            {"categories": [cat.format() for cat in categories]})
+            categories = Category.query.all().get_or_404()
+
+            return jsonify({
+                "status": True,
+                "status_code": 200,
+                "categories": [cat.format() for cat in categories]
+            })
+        except:
+            abort(422)
 
     '''
-    @TODO: 
-    Create an endpoint to handle GET requests for questions, 
-    including pagination (every 10 questions). 
-    This endpoint should return a list of questions, 
-    number of total questions, current category, categories. 
+    @TODO:
+    Create an endpoint to handle GET requests for questions,
+    including pagination (every 10 questions).
+    This endpoint should return a list of questions,
+    number of total questions, current category, categories.
 
     TEST: At this point, when you start the application
     you should see questions and categories generated,
     ten questions per page and pagination at the bottom of the screen for three pages.
-    Clicking on the page numbers should update the questions. 
+    Clicking on the page numbers should update the questions.
     '''
-    @app.route("/questions")
+    @app.route("/questions", methods=["GET"])
     @cross_origin()
     def get_questions():
-        questions = Question.query.all()
-        print(questions)
-        return "q"
+        if request.method != "GET" and request.method != "POST":
+            abort(405)
+
+        try:
+            page = request.args.get("page", 1, type=int)
+            limit = request.args.get("limit", 10, type=int)
+            offset = (page - 1) * limit
+            questions = Question.query.offset(offset).limit(limit).all()
+
+            if (len(questions) == 0):
+                abort(404)
+
+            return jsonify({
+                "success": True,
+                "status": 200,
+                "count": len(questions),
+                "questions": [q.format() for q in questions],
+                "categories": [c.format() for c in Category.query.all()]
+            })
+        except:
+            abort(422)
 
     '''
-    @TODO: 
-    Create an endpoint to DELETE question using a question ID. 
+    @TODO:
+    Create an endpoint to DELETE question using a question ID.
 
     TEST: When you click the trash icon next to a question, the question will be removed.
-    This removal will persist in the database and when you refresh the page. 
+    This removal will persist in the database and when you refresh the page.
     '''
 
     @app.route("/questions/<int:question_id>", methods=["DELETE"])
@@ -77,25 +101,23 @@ def create_app(test_config=None):
     def delete_question(question_id):
         # TODO:
         # delete question
-        return
+        try:
+            if request.method != "DELETE":
+                abort(405)
+            return
+        except:
+            abort(422)
 
     '''
-    @TODO: 
-    Create an endpoint to POST a new question, 
-    which will require the question and answer text, 
+    @TODO:
+    Create an endpoint to POST a new question,
+    which will require the question and answer text,
     category, and difficulty score.
 
-    TEST: When you submit a question on the "Add" tab, 
+    TEST: When you submit a question on the "Add" tab,
     the form will clear and the question will appear at the end of the last page
-    of the questions list in the "List" tab.  
+    of the questions list in the "List" tab.
     '''
-
-    @app.route("/questions/<int:question_id>", methods=["POST"])
-    @cross_origin()
-    def create_question(question_id):
-        # TODO:
-        # create question
-        return
 
     '''
     @TODO: 
@@ -108,13 +130,54 @@ def create_app(test_config=None):
     Try using the word "title" to start. 
     '''
 
-    @app.route("/questions/search", methods=["POST"])
+    @app.route("/questions", methods=["POST"])
     @cross_origin()
-    def search_questions():
+    def create_question_or_search_question():
         # TODO:
-        # search question
-        return
+        # create question or search
+        body = request.get_json()
 
+        question = body.get("question", None)
+        answer = body.get("answer", None)
+        difficulty = body.get("difficulty", None)
+        category = body.get("category", None)
+
+        search = body.get("search", None)
+
+        try:
+            if search:
+                search_questions = Question.query.filter(
+                    Question.question.ilike("%{}%".format(search))).all()
+
+                return jsonify({
+                    "status_code": 200,
+                    "success": True,
+                    "total_questions": len(search_questions),
+                    "questions": [q.format() for q in search_questions]
+                })
+            else:
+
+                try:
+                    new_question = Question(
+                        question=question,
+                        answer=answer,
+                        category=category,
+                        difficulty=difficulty
+                    )
+                    new_question.insert()
+                except:
+                    db.session.rollback()
+                    abort(422)
+
+                finally:
+                    db.session.close()
+
+                return jsonify({
+                    "success": True,
+                    "status_code": 200,
+                })
+        except:
+            abort(422)
     '''
     @TODO: 
     Create a GET endpoint to get questions based on category. 
@@ -129,7 +192,12 @@ def create_app(test_config=None):
     def get_categories_questions(category_id):
         # TODO:
         # list questions
-        return
+        try:
+            if request.method != "GET":
+                abort(405)
+            return
+        except:
+            abort(422)
     '''
     @TODO: 
     Create a POST endpoint to get questions to play the quiz. 
@@ -146,6 +214,12 @@ def create_app(test_config=None):
     def play():
         # TODO:
         # return random choice of questions based on category_id
+        try:
+            if request.method != "POST":
+                abort(405)
+            return
+        except:
+            abort(422)
         return
 
     '''
@@ -160,6 +234,13 @@ def create_app(test_config=None):
             "success": False,
             "message": "Not found"
         }), 404
+
+    @app.errorhandler(405)
+    def method_not_allowed(e):
+        return jsonify({
+            "success": False,
+            "message": "Method not allowed"
+        }), 405
 
     @app.errorhandler(422)
     def not_processable(e):
