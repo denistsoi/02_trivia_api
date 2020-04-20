@@ -41,12 +41,12 @@ def create_app(test_config=None):
             if request.method != "GET":
                 abort(405)
 
-            categories = Category.query.all().get_or_404()
+            categories = Category.query.all()
 
             return jsonify({
                 "status": True,
                 "status_code": 200,
-                "categories": [cat.format() for cat in categories]
+                "categories": [cat.type for cat in categories]
             })
         except:
             abort(422)
@@ -81,9 +81,10 @@ def create_app(test_config=None):
             return jsonify({
                 "success": True,
                 "status": 200,
-                "count": len(questions),
+                "total_questions": len(questions),
                 "questions": [q.format() for q in questions],
-                "categories": [c.format() for c in Category.query.all()]
+                "current_category": None,
+                "categories": [c.type for c in Category.query.all()]
             })
         except:
             abort(422)
